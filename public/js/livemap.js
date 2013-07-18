@@ -14,7 +14,7 @@ $(document).ready(function(){
 		layers : [ cloudmade ],
 		zoomControl : false
 	});
-	
+
 	var StationIcon = L.Icon.extend({options:{
 	    iconUrl: 'images/station_22x22.png',
 	    shadowUrl: null,
@@ -32,7 +32,7 @@ $(document).ready(function(){
 	    iconAnchor: new L.Point(10, 10),
 	    popupAnchor: new L.Point(0,-10)
 	}});
-	
+
 	var TramIcon = L.Icon.extend({options:{
 	    iconUrl: 'images/tram_20x20.png',
 	    shadowUrl: null,
@@ -41,12 +41,12 @@ $(document).ready(function(){
 	    iconAnchor: new L.Point(10,10),
 	    popupAnchor: new L.Point(0,-10)
 	}});
-	
+
 	var hIcon = new StationIcon();
 	var bIcon = new BusIcon();
 	var tIcon = new TramIcon();
-	
-	
+
+
 	var nulls = function(i) {
 		return (i < 10) ? i = '0' + i : i;
 	};
@@ -54,14 +54,14 @@ $(document).ready(function(){
 	var getOffset = function(d) {
 		/* summertime for germany, 2011 */
 		if ((d.getUTCMonth() == 3 && d.getUTCDate() >= 27) ||
-			(d.getUTCMonth() == 10 && d.getUTCDate() <= 30) || 
+			(d.getUTCMonth() == 10 && d.getUTCDate() <= 30) ||
 			(d.getUTCMonth() > 3 && d.getUTCMonth() < 10))
 		    return 2;
-		else 
+		else
 		    return 1;
 	}
 
-	window.setInterval(function() {		
+	window.setInterval(function() {
 		var d = new Date();
 		var offset = getOffset(d);
 
@@ -77,58 +77,58 @@ $(document).ready(function(){
 	var d = new Date();
 	var offset = getOffset(d);
 	if (
-		(((d.getUTCHours() + offset) % 24) >= 23 && d.getUTCMinutes() > 30) || 
+		(((d.getUTCHours() + offset) % 24) >= 23 && d.getUTCMinutes() > 30) ||
 		(((d.getUTCHours() + offset) % 24)) < 6){
 		$("#warning").show();
-	}	
-	
+	}
+
 	var stopsLayer;
 	var shapeLayers = {};
 	var trips = {};
-	
+
 	$.ajax({
 	  url: '/data/trips',
 		  success: function(data) {
-		  	trips = data;		  
+		  	trips = data;
 		}
 
 	});
-	
+
 	$.ajax({
 	  url: '/data/stops',
 		  success: function(data) {
 
 			  L.geoJson(data, {
 					pointToLayer: function(f, latlng) { return new L.Marker(latlng, {icon : hIcon }).bindPopup('<b>'+f.properties.stop_name+'</b><br>'+f.properties.stop_longname); }
-			  }).addTo(map);  
+			  }).addTo(map);
 		  }
-	});	
+	});
 
 	$.ajax({
 	  url: '/data/shapes',
 		  success: function(data) {
-		  
-		  
+
+
 		  	for(var i in data){
 			  	if (data.hasOwnProperty(i)) {
 
 			  		L.geoJson(data[i], {
-						
-					  
-				  }).addTo(map); 
+
+
+				  }).addTo(map);
 			  	}
 		  	}
 		}
 
 	});
-	
 
-	
+
+
 	var socket = io.connect('/');
 
 	var knownTrips = {};
 
-	
+
 	var delayedMoveMarker = function(delay, trip, lat, lon){
 		var marker = knownTrips[trip];
 		setTimeout(function(){
@@ -145,34 +145,34 @@ $(document).ready(function(){
 
 	/* event simulator, throws an event every 10 secs. */
 	socket.on('event', function (data) {
-		for(var trip in data){
-			if(data.hasOwnProperty(trip)){
+		for(var trip in data) {
+			if(data.hasOwnProperty(trip)) {
 				var newMarker = false;
-				if(!knownTrips[trip]){
+				if(!knownTrips[trip]) {
 					var popup;
 					var markerIcon = bIcon;
-					if(trips && trips[trip]){
+					if(trips && trips[trip]) {
 						popup = "<b>"+trips[trip].route_short_name+" – "+trips[trip].trip_headsign+"</b><br>"+trips[trip].route_long_name+"<br><i>"+trip+"</i>";
 						//bus or tram?
 						markerIcon = (trips[trip].route_type == "0" ? tIcon : bIcon);
 					}
-					else{
+					else {
 						console.dir(trips);
 					}
 					knownTrips[trip] = new L.Marker(new L.LatLng(data[trip][0][1], data[trip][0][0]), {icon : markerIcon});
 					knownTrips[trip].bindPopup(popup || trip);
 					newMarker = true;
-				}	
-				for(var i = 0;i<data[trip].length;i++){
+				}
+				for(var i = 0;i<§data[trip].length;i++){
 					delayedMoveMarker(1000*i, trip, data[trip][i][1], data[trip][i][0]);
 				}
 				if(newMarker){
-					map.addLayer(knownTrips[trip]);	
-				}				
+					map.addLayer(knownTrips[trip]);
+				}
 			}
 		}
 	});
-		
+
 });
 
 

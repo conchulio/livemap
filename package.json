@@ -14,7 +14,9 @@
     "express" : ">= 2.4.6",
     "ejs" : ">= 0.4.3",
 		"socket.io": ">= 0.7.9",
-		"socket.io-client": ">= 0.7.9"
+		"socket.io-client": ">= 0.7.9",
+    "pg": "~2",
+    "orm": "~2"
   },
   "devDependencies": {}
 }
