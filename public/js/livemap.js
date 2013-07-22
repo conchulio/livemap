@@ -163,7 +163,7 @@ $(document).ready(function(){
 					knownTrips[trip].bindPopup(popup || trip);
 					newMarker = true;
 				}
-				for(var i = 0;i<§data[trip].length;i++){
+				for(var i = 0;i<data[trip].length;i++){
 					delayedMoveMarker(1000*i, trip, data[trip][i][1], data[trip][i][0]);
 				}
 				if(newMarker){
