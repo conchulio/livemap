@@ -48,8 +48,6 @@ var gtfs = Gtfs(process.env.GTFS_PATH || path.join(__dirname,"gtfs",gtfsdir), fu
 
 	mapDataGenerator.gen(gtfsData, process.env.GTFS_PATH || path.join(__dirname,"gtfs",gtfsdir), function(mapData) {
 
-		debugger;
-
 		//calculate normalized shapes
 		var pathNormalizer = PathNormalizer(mapData.getShapes());
 
