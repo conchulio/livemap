@@ -1,21 +1,24 @@
 var path = require('path');
 var http = require('http');
 
-var createShapes = false;
-for (var i in process.argv) {
-	if (i == 0 || i == 1)
-		continue;
-	if (process.argv[i] == "--create-shapes") {
-		var createShapes = true; 
-	} else if (process.argv[i] == "--help" || process.argv[i] == "-h") {
-		console.log("These options are available:\n\
-\t--help\tdisplay this text\n\
-\t--create-shapes\tdelete 'shapes.txt' and create anew based on the other GTFS data")
-	}
-}
-
 //var nko = require('nko')('R8N+nroFbZPS6D4n');
 var express = require('express');
+var orm = require('orm');
+orm.connect("postgres://postgres@localhost/database", function (err, db) {
+  	if (err) throw err;
+
+  	db.load("./models", function(err) {
+		var Agency = db.models.agency;
+		var Calendar = db.models.calendar;
+		var Calendar_date = db.models.calendar_date;
+		var Route = db.models.route;
+		var Shape = db.models.shape;
+		var Stop_time = db.models.stop_time;
+		var Stop = db.models.stop;
+		var Transfer = db.models.transfer;
+		var Trip = db.models.trip;
+	});
+});
 //var ejs = require('ejs');
 //var io = require('socket.io');
 
@@ -31,7 +34,6 @@ var app = express();
 var server = http.createServer(app)
 var io = require('socket.io').listen(server);
 
-
 app.configure(function() {
 	app.use(express.static(__dirname + '/public'));
 	app.use(express.logger());
@@ -43,6 +45,12 @@ app.configure(function() {
 });
 
 var gtfsdir = "ulm";
+
+if !(fs.existsSync(path.join(__dirname,"gtfs",gtfsdir,"shapes.txt"))) {
+	console.log("Didn't find shapes file for this city, creating a new one. This can take a while...");
+	require(path.join(__dirname, "lib", "gtfs-parser", "create-shapes")).generate(gtfsdir);
+	console.log("Finished creating shapes.")
+} 
 
 var gtfs = Gtfs(process.env.GTFS_PATH || path.join(__dirname,"gtfs",gtfsdir), function(gtfsData){
 
