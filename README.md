@@ -1,4 +1,16 @@
 # LiveMap
+
+## TODO
+
+Livemaps
+
+ * Zu Beginn alle CSVs in die Datenbank. Schema mit ORM erstellen. Mit pg verbinden, Tabellen mit COPY aus den CSVs holen. Dann normal fortfahren.
+
+
+ * Dann statt dem CSV parser einfach Daten aus der Datenbank holen.
+
+ * Im nächsten Schritt nicht alles in den Speicher laden sondern Zeile für Zeile querien.
+
 ### Real-time visualization of public transportation in the City of Ulm, Germany.
 
 
