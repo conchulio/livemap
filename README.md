@@ -4,6 +4,9 @@
 
 Livemaps
 
+FEEEEEHLER:
+Er synchronisiert nur "Agency". Anscheinend ist db.define() asynchron. Wenn es das nicht ist muss es an einer anderen Stelle Code geben, der asynchron ist und dadurch das Programm weiterspringt und indeterministisch wird.
+
  * Zu Beginn alle CSVs in die Datenbank. Schema mit ORM erstellen. Mit pg verbinden, Tabellen mit COPY aus den CSVs holen. Dann normal fortfahren.
 
 
@@ -26,11 +29,11 @@ This application is a contribution to the Node Knockout 2011 by UlmApi.de member
 
 ## Technologies used
 
-node.js: General platform   
-express.js: Middleware framework   
-Socket.IO: Messaging library   
-Leaflet: JavaScript mapping library   
-bootstrap: CSS template   
+node.js: General platform
+express.js: Middleware framework
+Socket.IO: Messaging library
+Leaflet: JavaScript mapping library
+bootstrap: CSS template
 
 
 ## What is UlmApi.de?
@@ -40,8 +43,8 @@ We are a group of open data enthusiasts, mostly from the University of Ulm.
 
 # License
 
-	Copyright (c) 2011 
-		
+	Copyright (c) 2011
+
 		Benjamin Erb
 		Simon Fuchs
 		Stefan Kaufmann

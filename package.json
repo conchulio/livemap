@@ -16,7 +16,7 @@
 		"socket.io": ">= 0.7.9",
 		"socket.io-client": ">= 0.7.9",
     "pg": "~2",
-    "orm": "~2",
+    "orm": "~2"
   },
   "devDependencies": {}
 }
