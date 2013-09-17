@@ -7,77 +7,88 @@ var pg = require('pg');
 var express = require('express');
 var orm = require('orm');
 
+var dbName = "postgres://postgres@localhost/livemaps";
 
 var gtfsdir = "ulm";
 var fullGtfsPath = path.join(__dirname,"gtfs",gtfsdir);
 // Create shapes if they don't exist for 'gtfsdir'
 if (!fs.existsSync(path.join(__dirname,"gtfs",gtfsdir,"shapes.txt"))) {
-    console.log("Didn't find shapes file for this city, creating a new one. This can take a while...");
-    require(path.join(__dirname, "lib", "gtfs-parser", "create-shapes")).generate(gtfsdir);
-    console.log("Finished creating shapes.")
+  console.log("Didn't find shapes file for this city, creating a new one. This can take a while...");
+  require(path.join(__dirname, "lib", "gtfs-parser", "create-shapes")).generate(gtfsdir, connectToDb);
+  console.log("Finished creating shapes.")
+} else {
+  connectToDb();
 }
 
-var dbName = "postgres://postgres@localhost/livemaps";
-
 // Connect with ORM to define the scheme
-orm.connect(dbName, function (err, db) {
+function connectToDb() {
+  orm.connect(dbName, function (err, db) {
     if (err) throw err;
 
     db.load("./models", function(err) {
-        var Agency = db.models.agency;
-        var Calendar = db.models.calendar;
-        var Calendar_date = db.models.calendar_date;
-        var Route = db.models.route;
-        var Shape = db.models.shape;
-        var Stop_time = db.models.stop_time;
-        var Stop = db.models.stop;
-        var Transfer = db.models.transfer;
-        var Trip = db.models.trip;
-        db.sync(function (err) {
-            if (err) {
-                console.log(err);
-            }
+      var Agency = db.models.agency;
+      var Calendar = db.models.calendar;
+      var Calendar_date = db.models.calendar_date;
+      var Route = db.models.route;
+      var Shape = db.models.shape;
+      var Stop_time = db.models.stop_time;
+      var Stop = db.models.stop;
+      var Transfer = db.models.transfer;
+      var Trip = db.models.trip;
+      db.sync(function (err) {
+        if (err) {
+          console.log(err);
+        }
 
-            // Connect with pg to copy the data from the csvs
-            var client = new pg.Client(dbName);
-            client.connect(function (err) {
-                if (err) {
-                    return console.error('Could not connect to postgres', err);
-                }
+        // Connect with pg to copy the data from the csvs
+        var client = new pg.Client(dbName);
+        client.connect(function (err) {
+          if (err) {
+            return console.error('Could not connect to postgres', err);
+          }
 
-                var error = null;
-                var fileNames = fs.readdirSync(fullGtfsPath);
-                fileNames = fileNames.filter(function(d){return d.match(/\.txt$/);})
-                                     .map(function(d){return {path: path.join(fullGtfsPath, d).toString(),
-                                                              tableName: d.replace(/s?\.txt$/, "")};});
-                console.log(fileNames);
-                checkIfExisting = function(d) {
-                    var existQuery = "SELECT * FROM "+d.tableName+";";
-                    client.query(existQuery, function(err, res) {
-                        if (err) {
-                            console.error("Error occured when reading from the database, I tried the query "+existQuery, err);
-                            return;
-                        }
-                        console.log('before copying');
-                        if (res.length === 0) {
-                            console.log('while copying');
-                            copyQuery = "COPY "+tableName+" FROM '"+path+"' DELIMITER ',' CSV;";
-                            client.query(copyQuery, function (err, res) {});
-                            console.log('after copying');
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    });
-                };
-
-                fileNames.map(checkIfExisting);
-                codeForServer();
+          var fileNames = fs.readdirSync(fullGtfsPath);
+          fileNames = fileNames.filter(function(d){return d.match(/\.txt$/);})
+                               .map(function(d){return {path: path.join(fullGtfsPath, d),
+                                                        tableName: d.replace(/s?\.txt$/, "")};});
+          checkIfExisting = function(d) {
+            var existQuery = "SELECT * FROM "+d.tableName+";";
+            client.query(existQuery, function(err, res) {
+              // console.log(res);
+              if (err) {
+                console.error("Error occured when reading from the database, I tried the query "+existQuery, err);
+                return;
+              }
+              console.log('before copying');
+              if (res.rowCount === 0) {
+                console.log('while copying');
+                copyQuery = "COPY "+d.tableName+" FROM '"+d.path+"' DELIMITER ',' CSV;";
+                var counter = 0;
+                client.query(copyQuery, function (err, res) {
+                  if (err) {
+                    console.log("Path/Table:"+JSON.stringify(d));
+                    throw err;
+                  }
+                  counter += 1;
+                  if (counter === fileNames.length) {
+                    codeForServer();
+                  }
+                });
+                console.log('after copying');
+                return true;
+              } else {
+                return false;
+              }
             });
+          };
 
+          fileNames.map(checkIfExisting);
         });
+
+      });
     });
-});
+  });
+}
 
 function codeForServer() {
     //var events = require(path.join(__dirname,"lib","event-simulator","event-simulator.js"));
@@ -92,18 +103,18 @@ function codeForServer() {
     var io = require('socket.io').listen(server);
 
     app.configure(function() {
-        app.use(express.static(__dirname + '/public'));
-        app.use(express.logger());
-        app.use(express.errorHandler({dumpExceptions: true, showStack: true}));
-        app.set('views', __dirname + '/views');
-        app.engine('.html', require('ejs').__express);
+      app.use(express.static(__dirname + '/public'));
+      app.use(express.logger());
+      app.use(express.errorHandler({dumpExceptions: true, showStack: true}));
+      app.set('views', __dirname + '/views');
+      app.engine('.html', require('ejs').__express);
     //  app.register('.html', ejs);
-        app.set('view engine', 'html');
-    });
+    app.set('view engine', 'html');
+  });
 
     var gtfs = Gtfs(process.env.GTFS_PATH || path.join(__dirname,"gtfs",gtfsdir), function(gtfsData){
 
-        mapDataGenerator.gen(gtfsData, process.env.GTFS_PATH || fullGtfsPath, function(mapData) {
+      mapDataGenerator.gen(gtfsData, process.env.GTFS_PATH || fullGtfsPath, function(mapData) {
 
             //calculate normalized shapes
             var pathNormalizer = PathNormalizer(mapData.getShapes());
@@ -118,13 +129,13 @@ function codeForServer() {
             /* event simulator, throws an event every 10 secs. */
             gtfsEvents.init(gtfsData, 10000, function(data) {
 
-                var trips = data.trips;
+              var trips = data.trips;
 
-                var pushData = {};
+              var pushData = {};
 
-                for (var i in trips){
-                    if (trips.hasOwnProperty(i)) {
-                        var delta = (trips[i].progressThen - trips[i].progressNow) / 10;
+              for (var i in trips){
+                if (trips.hasOwnProperty(i)) {
+                  var delta = (trips[i].progressThen - trips[i].progressNow) / 10;
                         //console.log(delta);
                         var pointList = [];
 
@@ -132,17 +143,17 @@ function codeForServer() {
                         if (!shapeId) continue;
 
                         for (var j = 0; j<10; j++) {
-                            var idx = Math.floor((trips[i].progressNow + j*delta)*1000);
-                            if(idx === 1000 || idx ===0){
-                                pointList.push([0,0]);
-                            }
-                            else {
-                                pointList.push(pathNormalizer.getNormalizedPath(shapeId)[idx]);
-                            }
+                          var idx = Math.floor((trips[i].progressNow + j*delta)*1000);
+                          if(idx === 1000 || idx ===0){
+                            pointList.push([0,0]);
+                          }
+                          else {
+                            pointList.push(pathNormalizer.getNormalizedPath(shapeId)[idx]);
+                          }
                         }
                         pushData[i] = pointList;
+                      }
                     }
-                }
 
                 /*
                 var p = Math.floor(step.progress * 10);
@@ -155,14 +166,14 @@ function codeForServer() {
                 }
                 */
                 io.sockets.emit('event', pushData);
-            });
+              });
 
-            server.listen(process.env.PORT || 3000);
+server.listen(process.env.PORT || 3000);
             //var appServer = app.listen(parseInt(process.env.PORT) || 3000);
             console.log('Listening on ' + server.address().port);
 
-        });
+          });
 
 
-    });
+});
 }

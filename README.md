@@ -4,11 +4,7 @@
 
 Livemaps
 
-FEEEEEHLER:
-Er synchronisiert nur "Agency". Anscheinend ist db.define() asynchron. Wenn es das nicht ist muss es an einer anderen Stelle Code geben, der asynchron ist und dadurch das Programm weiterspringt und indeterministisch wird.
-
- * Zu Beginn alle CSVs in die Datenbank. Schema mit ORM erstellen. Mit pg verbinden, Tabellen mit COPY aus den CSVs holen. Dann normal fortfahren.
-
+Fehler: Default Primary-Key für Service und andere Tabellen, die nicht von GTFS aus schon eine ID habe. Sonst macht Postgres immer das erste was es finden kann zur ID.
 
  * Dann statt dem CSV parser einfach Daten aus der Datenbank holen.
 

@@ -5,7 +5,10 @@ module.exports = function(db, cb) {
 		agency_url: String,
 		agency_timezone: String,
 		agency_lang: String,
-		agency_phone: String
+		agency_phone: String,
+		agency_fare_url: String
+	}, {
+    id: 'agency_id'
 	});
 	var Calendar = db.define("calendar", {
 		service_id: String,
@@ -34,12 +37,16 @@ module.exports = function(db, cb) {
 		route_url: String,
 		route_color: String,
 		route_text_color: String,
+	}, {
+		id: 'route_id'
 	});
 	var Shape = db.define("shape", {
 		shape_id: String,
 		shape_pt_lon: Number,
 		shape_pt_lat: Number,
 		shape_pt_sequence: Number
+	}, {
+		id: 'shape_id'
 	});
 	var Stop_time = db.define("stop_time", {
 		trip_id: String,
@@ -60,6 +67,8 @@ module.exports = function(db, cb) {
 		stop_lat: Number,
 		stop_lon: Number,
 		zone_id: String
+	}, {
+		id: 'stop_id'
 	});
 	var Transfer = db.define("transfer", {
 		from_stop_id: String,
@@ -78,6 +87,8 @@ module.exports = function(db, cb) {
 		direction_id: String,
 		block_id: String,
 		shape_id: String
+	}, {
+		id: 'trip_id'
 	});
 
 	return cb();
