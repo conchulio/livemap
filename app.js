@@ -10,77 +10,84 @@ var orm = require('orm');
 
 var gtfsdir = "ulm";
 var fullGtfsPath = path.join(__dirname,"gtfs",gtfsdir);
-// Create shapes if they don't exist for 'gtfsdir'
-if (!fs.existsSync(path.join(__dirname,"gtfs",gtfsdir,"shapes.txt"))) {
-	console.log("Didn't find shapes file for this city, creating a new one. This can take a while...");
-	require(path.join(__dirname, "lib", "gtfs-parser", "create-shapes")).generate(gtfsdir);
-	console.log("Finished creating shapes.")
-}
 
 var dbName = "postgres://postgres@localhost/livemaps";
 
 // Connect with ORM to define the scheme
-orm.connect(dbName, function (err, db) {
-	if (err) throw err;
+// Create shapes if they don't exist for 'gtfsdir'
+if (!fs.existsSync(path.join(__dirname,"gtfs",gtfsdir,"shapes.txt"))) {
+	console.log("Didn't find shapes file for this city, creating a new one. This can take a while...");
+	require(path.join(__dirname, "lib", "gtfs-parser", "create-shapes")).generate(gtfsdir, function () {
+		connectToDb(codeForServer);
+	});
+	console.log("Finished creating shapes.")
+} else {
+	connectToDb(codeForServer);
+}
 
-	db.load("./models", function(err) {
-		var Agency = db.models.agency;
-		var Calendar = db.models.calendar;
-		var Calendar_date = db.models.calendar_date;
-		var Route = db.models.route;
-		var Shape = db.models.shape;
-		var Stop_time = db.models.stop_time;
-		var Stop = db.models.stop;
-		var Transfer = db.models.transfer;
-		var Trip = db.models.trip;
-		db.sync(function (err) {
-			if (err) {
-				console.log(err);
-			}
+function connectToDb(cb) {
+	orm.connect(dbName, function (err, db) {
+		if (err) throw err;
 
-			// Connect with pg to copy the data from the csvs
-			var client = new pg.Client(dbName);
-			client.connect(function (err) {
+		db.load("./models", function(err) {
+			var Agency = db.models.agency;
+			var Calendar = db.models.calendar;
+			var Calendar_date = db.models.calendar_date;
+			var Route = db.models.route;
+			var Shape = db.models.shape;
+			var Stop_time = db.models.stop_time;
+			var Stop = db.models.stop;
+			var Transfer = db.models.transfer;
+			var Trip = db.models.trip;
+			db.sync(function (err) {
 				if (err) {
-					return console.error('Could not connect to postgres', err);
+					console.log(err);
 				}
 
-				var error = null;
-				var fileNames = fs.readdirSync(fullGtfsPath);
-				for (i in fileNames) {
-					var fileName = fileNames[i];
-					if (!fileName.match(/\.txt$/)) {
-						continue;
+				// Connect with pg to copy the data from the csvs
+				var client = new pg.Client(dbName);
+				client.connect(function (err) {
+					if (err) throw err;
+
+					var error = null;
+					var fileNames = fs.readdirSync(fullGtfsPath);
+					var cont = true;
+					for (i in fileNames) {
+						(function() {
+							var fileName = fileNames[i];
+							if (fileName.match(/\.txt$/)) {
+
+								var pathToFile = path.join(fullGtfsPath, fileName);
+								var fileNameToTable = fileName.replace(/s?\.txt$/, "");
+								client.query("SELECT * FROM "+fileNameToTable+";", function (err, res) {
+									if (err) {
+										console.log("SELECT * FROM "+fileNameToTable+";");
+										throw err;
+									}
+									console.log('before copying');
+									if (res.length == 0) {
+										cont = false;
+										console.log('while copying');
+										client.query("COPY "+fileNameToTable+" FROM '"+pathToFile.toString()+"' DELIMITER ',' CSV;",
+																 function (err, res) {
+																		if (err) throw err;
+																 });
+										console.log('after copying');
+									}
+								});
+							}
+						})();
 					}
-					var pathToFile = path.join(fullGtfsPath, fileName);
-					var fileNameToTable = fileName.replace(/s\.txt$/, "");
-					client.query("SELECT * FROM "+fileNameToTable+";", function (err, res) {
-						if (err) {
-							console.error("Error occured when reading from the database", err);
-							return;
-						}
-						console.log('before copying');
-						if (res.length == 0) {
-							console.log('while copying');
-							client.query("COPY "+fileNameToTable+" FROM '"+pathToFile.toString()+"' DELIMITER ',' CSV;",
-													 function (err, res) {
-															if (err) {
-																error = err;
-															}
-													 });
-							console.log('after copying');
-						}
-					});
-				}
-				if (error) {
-					console.error('An error occured when parsing the csvs', error);
-				}
-				codeForServer();
-			});
+					if (cont)
+						cb();
+					else
+						console.log("Prepared all stuff. Type 'node app' again to start the server.")
+				});
 
+			});
 		});
 	});
-});
+}
 
 function codeForServer() {
 	//var events = require(path.join(__dirname,"lib","event-simulator","event-simulator.js"));
