@@ -4,7 +4,7 @@
 
 Livemaps
 
-Fehler: Default Primary-Key für Service und andere Tabellen, die nicht von GTFS aus schon eine ID habe. Sonst macht Postgres immer das erste was es finden kann zur ID.
+Fehler: postgres explizit sagen, welche spalten wir kopieren möchten.
 
  * Dann statt dem CSV parser einfach Daten aus der Datenbank holen.
 
