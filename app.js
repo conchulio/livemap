@@ -52,6 +52,7 @@ function connectToDb() {
                                .map(function(d){return {path: path.join(fullGtfsPath, d),
                                                         tableName: d.replace(/s?\.txt$/, "")};});
           checkIfExisting = function(d) {
+            var counter = 0;
             var existQuery = "SELECT * FROM "+d.tableName+";";
             client.query(existQuery, function(err, res) {
               // console.log(res);
@@ -62,8 +63,7 @@ function connectToDb() {
               console.log('before copying');
               if (res.rowCount === 0) {
                 console.log('while copying');
-                copyQuery = "COPY "+d.tableName+" FROM '"+d.path+"' DELIMITER ',' CSV;";
-                var counter = 0;
+                var copyQuery = "COPY "+d.tableName+" FROM '"+d.path+"' DELIMITER ',' CSV HEADER;";
                 client.query(copyQuery, function (err, res) {
                   if (err) {
                     console.log("Path/Table:"+JSON.stringify(d));
@@ -75,9 +75,8 @@ function connectToDb() {
                   }
                 });
                 console.log('after copying');
-                return true;
               } else {
-                return false;
+                counter += 1;
               }
             });
           };

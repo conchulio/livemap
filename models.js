@@ -21,20 +21,25 @@ module.exports = function(db, cb) {
 		sunday: String,
 		start_date: String, // ?
 		end_date: String // ?
+	}, {
+		id: 'calendar_id'
 	});
 	var Calendar_date = db.define("calendar_date", {
 		service_id: String,
 		date: String, // ?
 		exception_type: String
+	}, {
+		id: 'calendar_date_id'
 	});
+	// Berlin uses the attributes commented out here in routes.txt
 	var Route = db.define("route", {
 		route_id: String,
 		agency_id: String,
 		route_short_name: String,
 		route_long_name: String,
-		route_desc: String,
+		// route_desc: String,
 		route_type: String,
-		route_url: String,
+		// route_url: String,
 		route_color: String,
 		route_text_color: String,
 	}, {
@@ -46,7 +51,7 @@ module.exports = function(db, cb) {
 		shape_pt_lat: Number,
 		shape_pt_sequence: Number
 	}, {
-		id: 'shape_id'
+		id: 'shape_pk' // Because 'shape_id' is not unique...
 	});
 	var Stop_time = db.define("stop_time", {
 		trip_id: String,
@@ -58,6 +63,8 @@ module.exports = function(db, cb) {
 		pickup_type: String,
 		drop_off_type: String,
 		shape_dist_traveled: String
+	}, {
+		id: 'stop_time_id'
 	});
 	var Stop = db.define("stop", {
 		stop_id: String,
@@ -77,6 +84,8 @@ module.exports = function(db, cb) {
 		min_transfer_time: Number,
 		from_trip_id: String,
 		to_trip_id: String
+	}, {
+		id: 'transfer_id'
 	});
 	var Trip = db.define("trip", {
 		route_id: String,
