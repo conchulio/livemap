@@ -2,6 +2,7 @@ var path = require('path');
 var http = require('http');
 var fs = require('fs');
 var pg = require('pg');
+var Lazy = require('lazy');
 
 //var nko = require('nko')('R8N+nroFbZPS6D4n');
 var express = require('express');
@@ -37,7 +38,7 @@ function connectToDb() {
       var Trip = db.models.trip;
       db.sync(function (err) {
         if (err) {
-          console.log(err);
+          console.error(err);
         }
 
         // Connect with pg to copy the data from the csvs
@@ -60,27 +61,28 @@ function connectToDb() {
                 console.error("Error occured when reading from the database, I tried the query "+existQuery, err);
                 return;
               }
-              console.log('before copying');
               if (res.rowCount === 0) {
-                console.log('while copying');
-                var copyQuery = "COPY "+d.tableName+" FROM '"+d.path+"' DELIMITER ',' CSV HEADER;";
-                client.query(copyQuery, function (err, res) {
-                  if (err) {
-                    console.log("Path/Table:"+JSON.stringify(d));
-                    throw err;
-                  }
-                  counter += 1;
-                  if (counter === fileNames.length) {
-                    codeForServer();
-                  }
+                (new Lazy(fs.createReadStream(d.path))).lines.head(function(line) {
+                  line = line.toString().replace(/"/g, "");
+                  line = "("+line+")";
+                  var copyQuery = "COPY "+d.tableName+line+" FROM '"+d.path+"' DELIMITER ',' CSV HEADER;";
+                  client.query(copyQuery, function (err, res) {
+                    if (err) {
+                      console.log("Path/Table:"+JSON.stringify(d));
+                      throw err;
+                    }
+                    counter += 1;
+                    console.log("counter: "+counter);
+                    if (counter === fileNames.length) {
+                      codeForServer();
+                    }
+                  });
                 });
-                console.log('after copying');
               } else {
                 counter += 1;
               }
             });
           };
-
           fileNames.map(checkIfExisting);
         });
 

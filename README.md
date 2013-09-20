@@ -4,7 +4,7 @@
 
 Livemaps
 
-Fehler: postgres explizit sagen, welche spalten wir kopieren möchten.
+Fehler: Postgres kopiert brav, aber danach geschieht nichts: Entweder das kopieren dauert so lang (wäre bei Ulm komisch), oder unser Code hat ein kleines Problemchen ;)
 
  * Dann statt dem CSV parser einfach Daten aus der Datenbank holen.
 

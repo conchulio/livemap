@@ -73,7 +73,10 @@ module.exports = function(db, cb) {
 		stop_desc: String,
 		stop_lat: Number,
 		stop_lon: Number,
-		zone_id: String
+		zone_id: String,
+		stop_url: String,
+		location_type: String,
+		parent_station: String
 	}, {
 		id: 'stop_id'
 	});
